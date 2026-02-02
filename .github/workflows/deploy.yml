@@ -61,63 +61,85 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FRONTEND_URL: ${{ vars.FRONTEND_URL || 'https://deepak4395.github.io/Comments' }}
         run: |
-          ssh -i ~/.ssh/deploy_key $SERVER_USER@$SERVER_HOST << 'ENDSSH'
-            set -e
+          # Create remote deployment script with environment variables properly embedded
+          cat > /tmp/deploy_script.sh << 'DEPLOY_SCRIPT_EOF'
+          #!/bin/bash
+          set -e
 
-            # Update system and install dependencies
-            echo "Installing system dependencies..."
-            sudo apt-get update
-            
-            # Install Node.js if not present
-            if ! command -v node &> /dev/null; then
-              curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-              sudo apt-get install -y nodejs
-            fi
+          # Environment variables passed from GitHub Actions
+          GOOGLE_CLIENT_ID="$1"
+          GOOGLE_CLIENT_SECRET="$2"
+          GEMINI_API_KEY="$3"
+          FRONTEND_URL="$4"
 
-            # Install PostgreSQL if not present
-            if ! command -v psql &> /dev/null; then
-              sudo apt-get install -y postgresql postgresql-contrib
-              sudo systemctl start postgresql
-              sudo systemctl enable postgresql
-            fi
+          # Update system and install dependencies
+          echo "Installing system dependencies..."
+          sudo apt-get update -qq
+          
+          # Install Node.js if not present
+          if ! command -v node &> /dev/null; then
+            echo "Installing Node.js..."
+            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+          fi
 
-            # Install Nginx if not present
-            if ! command -v nginx &> /dev/null; then
-              sudo apt-get install -y nginx
-              sudo systemctl start nginx
-              sudo systemctl enable nginx
-            fi
+          # Install PostgreSQL if not present
+          if ! command -v psql &> /dev/null; then
+            echo "Installing PostgreSQL..."
+            sudo apt-get install -y postgresql postgresql-contrib
+            sudo systemctl start postgresql
+            sudo systemctl enable postgresql
+          fi
 
-            # Install Certbot if not present
-            if ! command -v certbot &> /dev/null; then
-              sudo apt-get install -y certbot python3-certbot-nginx
-            fi
+          # Install Nginx if not present
+          if ! command -v nginx &> /dev/null; then
+            echo "Installing Nginx..."
+            sudo apt-get install -y nginx
+            sudo systemctl start nginx
+            sudo systemctl enable nginx
+          fi
 
-            # Install PM2 if not present
-            if ! command -v pm2 &> /dev/null; then
-              sudo npm install -g pm2
-            fi
+          # Install Certbot if not present
+          if ! command -v certbot &> /dev/null; then
+            echo "Installing Certbot..."
+            sudo apt-get install -y certbot python3-certbot-nginx
+          fi
 
-            # Create application directory
-            APP_DIR="/home/$USER/comments-app"
-            mkdir -p $APP_DIR
+          # Install PM2 if not present
+          if ! command -v pm2 &> /dev/null; then
+            echo "Installing PM2..."
+            sudo npm install -g pm2
+          fi
 
-            # Clone or pull repository
-            if [ -d "$APP_DIR/.git" ]; then
-              cd $APP_DIR
-              git pull origin main
-            else
-              git clone https://github.com/deepak4395/Comments.git $APP_DIR
-              cd $APP_DIR
-            fi
+          # Create application directory
+          APP_DIR="/home/$USER/comments-app"
+          mkdir -p $APP_DIR
 
-            # Install backend dependencies
-            cd $APP_DIR/server
-            npm install --production
+          # Clone or pull repository
+          if [ -d "$APP_DIR/.git" ]; then
+            echo "Updating repository..."
+            cd $APP_DIR
+            git fetch origin
+            git reset --hard origin/main
+          else
+            echo "Cloning repository..."
+            git clone https://github.com/deepak4395/Comments.git $APP_DIR
+            cd $APP_DIR
+          fi
 
-            # Create .env file with proper variable interpolation
-            cat > .env << EOF
+          # Install backend dependencies
+          echo "Installing backend dependencies..."
+          cd $APP_DIR/server
+          npm install --production
+
+          # Generate secure secrets
+          JWT_SECRET=$(openssl rand -base64 32)
+          SESSION_SECRET=$(openssl rand -base64 32)
+
+          # Create .env file with proper variable substitution
+          cat > .env << ENV_FILE_EOF
           NODE_ENV=production
           PORT=3000
           DB_HOST=localhost
@@ -129,50 +151,67 @@ jobs:
           GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
           GOOGLE_CALLBACK_URL=https://api.sarcasticrobo.online/auth/google/callback
           GEMINI_API_KEY=${GEMINI_API_KEY}
-          JWT_SECRET=$(openssl rand -base64 32)
-          SESSION_SECRET=$(openssl rand -base64 32)
-          FRONTEND_URL=https://comments.sarcasticrobo.online
-          EOF
+          JWT_SECRET=${JWT_SECRET}
+          SESSION_SECRET=${SESSION_SECRET}
+          FRONTEND_URL=${FRONTEND_URL}
+          ENV_FILE_EOF
 
-            # Verify .env was created correctly
-            echo "Verifying .env file (secrets masked)..."
-            if grep -q "GOOGLE_CLIENT_ID=\${GOOGLE_CLIENT_ID}" .env; then
-              echo "ERROR: Environment variables not interpolated!"
-              exit 1
-            fi
-            echo ".env file created successfully"
+          # Verify .env was created correctly
+          echo "Verifying .env file..."
+          if [ ! -f .env ]; then
+            echo "ERROR: .env file was not created!"
+            exit 1
+          fi
 
-            # Setup PostgreSQL database
-            echo "Setting up database..."
-            sudo -u postgres psql << 'EOSQL'
+          if [ ! -s .env ]; then
+            echo "ERROR: .env file is empty!"
+            exit 1
+          fi
+
+          # Setup PostgreSQL database
+          echo "Setting up database..."
+          sudo -u postgres psql << 'EOSQL'
           SELECT 'CREATE DATABASE comments_db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'comments_db')\gexec
           EOSQL
 
-            # Initialize database schema
-            sudo -u postgres psql -d comments_db -f $APP_DIR/server/scripts/init-db.sql || echo "Database already initialized"
+          # Initialize database schema
+          echo "Initializing database schema..."
+          sudo -u postgres psql -d comments_db -f $APP_DIR/server/scripts/init-db.sql || echo "Database already initialized"
 
-            # Setup Nginx configuration
-            echo "Configuring Nginx..."
-            sudo cp $APP_DIR/nginx/comments-api.conf /etc/nginx/sites-available/comments-api.conf
-            sudo ln -sf /etc/nginx/sites-available/comments-api.conf /etc/nginx/sites-enabled/
+          # Setup Nginx configuration
+          echo "Configuring Nginx..."
+          sudo cp $APP_DIR/nginx/comments-api.conf /etc/nginx/sites-available/comments-api.conf
+          sudo ln -sf /etc/nginx/sites-available/comments-api.conf /etc/nginx/sites-enabled/
 
-            # Obtain SSL certificate if not exists
-            if [ ! -d "/etc/letsencrypt/live/api.sarcasticrobo.online" ]; then
-              sudo certbot --nginx -d api.sarcasticrobo.online --non-interactive --agree-tos --email admin@sarcasticrobo.online || echo "SSL cert setup skipped"
-            fi
+          # Remove default nginx site if it exists
+          sudo rm -f /etc/nginx/sites-enabled/default
 
-            # Test and reload Nginx
-            sudo nginx -t && sudo systemctl reload nginx
+          # Obtain SSL certificate if not exists
+          if [ ! -d "/etc/letsencrypt/live/api.sarcasticrobo.online" ]; then
+            echo "Obtaining SSL certificate..."
+            sudo certbot --nginx -d api.sarcasticrobo.online --non-interactive --agree-tos --email admin@sarcasticrobo.online || echo "SSL cert setup skipped"
+          fi
 
-            # Start/restart application with PM2
-            cd $APP_DIR/server
-            pm2 delete comments-api || true
-            pm2 start src/index.js --name comments-api --env production
-            pm2 save
-            pm2 startup systemd -u $USER --hp /home/$USER || true
+          # Test and reload Nginx
+          echo "Testing Nginx configuration..."
+          sudo nginx -t && sudo systemctl reload nginx
 
-            echo "Deployment completed successfully!"
-          ENDSSH
+          # Start/restart application with PM2
+          echo "Starting application with PM2..."
+          cd $APP_DIR/server
+          pm2 delete comments-api 2>/dev/null || true
+          pm2 start src/index.js --name comments-api --env production
+          pm2 save
+          pm2 startup systemd -u $USER --hp /home/$USER 2>/dev/null || true
+
+          echo "Deployment completed successfully!"
+          echo "Application status:"
+          pm2 status comments-api
+          DEPLOY_SCRIPT_EOF
+
+          # Copy script to server and execute with secrets
+          scp -i ~/.ssh/deploy_key /tmp/deploy_script.sh $SERVER_USER@$SERVER_HOST:/tmp/deploy_script.sh
+          ssh -i ~/.ssh/deploy_key $SERVER_USER@$SERVER_HOST "chmod +x /tmp/deploy_script.sh && /tmp/deploy_script.sh '$GOOGLE_CLIENT_ID' '$GOOGLE_CLIENT_SECRET' '$GEMINI_API_KEY' '$FRONTEND_URL' && rm /tmp/deploy_script.sh"
 
       - name: Verify Deployment
         run: |

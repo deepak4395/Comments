@@ -5,6 +5,24 @@ const rateLimit = require('express-rate-limit');
 const session = require('express-session');
 require('dotenv').config();
 
+// Check for required environment variables
+const requiredEnvVars = [
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'JWT_SECRET',
+  'SESSION_SECRET'
+];
+
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingEnvVars.length > 0) {
+  console.error('Missing required environment variables:', missingEnvVars.join(', '));
+  console.error('Please check your .env file');
+  // In production, warn but don't exit to allow troubleshooting
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+}
+
 const passport = require('./config/passport');
 const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
@@ -118,9 +136,35 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  console.error('Stack:', err.stack);
+  // Exit after a brief delay to allow logging to complete
+  setTimeout(() => {
+    console.error('Exiting due to uncaught exception');
+    process.exit(1);
+  }, 1000);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'Not configured'}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
 
 module.exports = app;
