@@ -17,10 +17,8 @@ const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingEnvVars.length > 0) {
   console.error('Missing required environment variables:', missingEnvVars.join(', '));
   console.error('Please check your .env file');
-  // In production, warn but don't exit to allow troubleshooting
-  if (process.env.NODE_ENV !== 'production') {
-    process.exit(1);
-  }
+  console.error('Server cannot start without these variables');
+  process.exit(1);
 }
 
 const passport = require('./config/passport');
@@ -135,6 +133,7 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const BIND_HOST = '0.0.0.0'; // Bind to all interfaces for VPS compatibility
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
@@ -152,10 +151,20 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const server = app.listen(PORT, BIND_HOST, () => {
+  console.log(`Server running on ${BIND_HOST}:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'Not configured'}`);
+  console.log('Server is ready to accept connections');
+});
+
+// Handle server startup errors
+server.on('error', (err) => {
+  console.error('Server error:', err);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use`);
+  }
+  process.exit(1);
 });
 
 // Graceful shutdown
