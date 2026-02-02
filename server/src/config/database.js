@@ -9,7 +9,7 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,
 });
 
 // Test the connection
@@ -19,7 +19,17 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+  // Don't exit the process, just log the error
+});
+
+// Verify database connection on startup
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('Database connection error:', err);
+    console.error('Make sure PostgreSQL is running and credentials are correct');
+  } else {
+    console.log('Database connection verified at:', res.rows[0].now);
+  }
 });
 
 module.exports = pool;
