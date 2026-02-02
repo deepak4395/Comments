@@ -7,6 +7,7 @@ A complete comment and feedback system with Gmail OAuth authentication and AI-po
 - **Gmail-Only Authentication**: Secure OAuth 2.0 login via Google
 - **AI Moderation**: Intelligent content filtering using Google Gemini
 - **Smart Rating System**: AI suggests ratings, users can adjust
+- **User Profile Ratings**: Rate other users based on their contributions
 - **Multi-Section Support**: Organize comments by site sections (blog, profile, etc.)
 - **Real-time Stats**: View approval rates and average ratings
 - **Responsive Design**: Works on desktop and mobile devices
@@ -208,6 +209,37 @@ Delete a comment.
 Get comment statistics.
 - **Query Params**: 
   - `siteSection` (optional)
+
+### User Profile & Rating Endpoints
+
+#### `GET /api/users/:id/profile`
+Get user profile with rating information.
+
+#### `POST /api/users/:id/ratings`
+Rate a user (1-5 stars).
+- **Auth**: Required
+- **Body**:
+  ```json
+  {
+    "rating": 5
+  }
+  ```
+
+#### `GET /api/users/:id/ratings`
+Get ratings received by a user.
+
+#### `GET /api/users/:id/my-rating`
+Get your rating for a specific user.
+- **Auth**: Required
+
+#### `DELETE /api/users/:id/ratings`
+Delete your rating for a user.
+- **Auth**: Required
+
+#### `GET /api/users/:id/comments`
+Get comments by a specific user.
+
+For detailed documentation on the user rating feature, see [USER_RATING_FEATURE.md](USER_RATING_FEATURE.md).
 
 ## 🧪 Testing
 
