@@ -6,11 +6,7 @@ const userController = {
   // Get user profile with ratings and stats
   getUserProfile: async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
-
-      if (isNaN(userId)) {
-        return res.status(400).json({ error: 'Invalid user ID' });
-      }
+      const userId = req.validatedUserId;
 
       // Get user profile with stats
       const profile = await User.getProfileWithStats(userId);
@@ -53,13 +49,9 @@ const userController = {
   // Rate a user
   rateUser: async (req, res) => {
     try {
-      const ratedUserId = parseInt(req.params.id);
+      const ratedUserId = req.validatedUserId;
       const raterId = req.user.id;
       const { rating } = req.body;
-
-      if (isNaN(ratedUserId)) {
-        return res.status(400).json({ error: 'Invalid user ID' });
-      }
 
       // Validate rating
       if (!rating || !Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -105,13 +97,9 @@ const userController = {
   // Get ratings for a user (ratings they received)
   getUserRatings: async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.validatedUserId;
       const limit = Math.min(parseInt(req.query.limit) || 50, 100);
       const offset = parseInt(req.query.offset) || 0;
-
-      if (isNaN(userId)) {
-        return res.status(400).json({ error: 'Invalid user ID' });
-      }
 
       // Check if user exists
       const user = await User.findById(userId);
@@ -150,12 +138,8 @@ const userController = {
   // Get current user's rating for a specific user
   getMyRatingForUser: async (req, res) => {
     try {
-      const ratedUserId = parseInt(req.params.id);
+      const ratedUserId = req.validatedUserId;
       const raterId = req.user.id;
-
-      if (isNaN(ratedUserId)) {
-        return res.status(400).json({ error: 'Invalid user ID' });
-      }
 
       const rating = await UserRating.findRating(raterId, ratedUserId);
 
@@ -181,12 +165,8 @@ const userController = {
   // Delete a rating
   deleteRating: async (req, res) => {
     try {
-      const ratedUserId = parseInt(req.params.id);
+      const ratedUserId = req.validatedUserId;
       const raterId = req.user.id;
-
-      if (isNaN(ratedUserId)) {
-        return res.status(400).json({ error: 'Invalid user ID' });
-      }
 
       const deleted = await UserRating.delete(raterId, ratedUserId);
 
@@ -204,13 +184,9 @@ const userController = {
   // Get user's comments for their profile page
   getUserComments: async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.validatedUserId;
       const limit = Math.min(parseInt(req.query.limit) || 20, 100);
       const offset = parseInt(req.query.offset) || 0;
-
-      if (isNaN(userId)) {
-        return res.status(400).json({ error: 'Invalid user ID' });
-      }
 
       // Check if user exists
       const user = await User.findById(userId);
