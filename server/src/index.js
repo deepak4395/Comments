@@ -139,7 +139,12 @@ const PORT = process.env.PORT || 3000;
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
-  // Don't exit immediately, allow time for cleanup
+  console.error('Stack:', err.stack);
+  // Exit after a brief delay to allow logging to complete
+  setTimeout(() => {
+    console.error('Exiting due to uncaught exception');
+    process.exit(1);
+  }, 1000);
 });
 
 // Handle unhandled promise rejections

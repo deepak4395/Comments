@@ -19,7 +19,9 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
-  // Don't exit the process, just log the error
+  console.error('This usually means a database connection was lost');
+  console.error('The pool will attempt to reconnect automatically');
+  // The pool handles reconnection automatically, so we just log the error
 });
 
 // Verify database connection on startup
