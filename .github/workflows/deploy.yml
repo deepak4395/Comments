@@ -6,6 +6,11 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   deploy-frontend:
     name: Deploy Frontend to GitHub Pages
@@ -20,6 +25,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
           cname: comments.sarcasticrobo.online
+          force_orphan: true
 
   deploy-backend:
     name: Deploy Backend to VPS
