@@ -7,25 +7,37 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   deploy-frontend:
     name: Deploy Frontend to GitHub Pages
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './public'
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
-          cname: comments.sarcasticrobo.online
-          force_orphan: true
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   deploy-backend:
     name: Deploy Backend to VPS
@@ -33,7 +45,7 @@ jobs:
     needs: deploy-frontend
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup SSH
         run: |
@@ -119,7 +131,7 @@ jobs:
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
           JWT_SECRET=$(openssl rand -base64 32)
           SESSION_SECRET=$(openssl rand -base64 32)
-          FRONTEND_URL=https://deepak4395.github.io/Comments
+          FRONTEND_URL=https://comments.sarcasticrobo.online
           EOF
 
             # Setup PostgreSQL database
