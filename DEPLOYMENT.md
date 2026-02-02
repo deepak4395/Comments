@@ -22,6 +22,10 @@ This guide walks through the complete deployment process for the Comments & Feed
 5. `GOOGLE_CLIENT_SECRET` - OAuth client secret
 6. `GEMINI_API_KEY` - Google AI Studio API key
 
+### Optional Variables in GitHub
+1. `FRONTEND_URL` - Frontend URL (defaults to `https://deepak4395.github.io/Comments`)
+   - Set this as a repository variable if you need a different frontend URL
+
 ## Manual Deployment Steps
 
 ### 1. Server Initial Setup
