@@ -116,8 +116,8 @@ jobs:
             cd $APP_DIR/server
             npm install --production
 
-            # Create .env file
-            cat > .env << 'EOF'
+            # Create .env file with proper variable interpolation
+            cat > .env << EOF
           NODE_ENV=production
           PORT=3000
           DB_HOST=localhost
@@ -125,14 +125,22 @@ jobs:
           DB_NAME=comments_db
           DB_USER=postgres
           DB_PASSWORD=postgres
-          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+          GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
           GOOGLE_CALLBACK_URL=https://api.sarcasticrobo.online/auth/google/callback
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY=${GEMINI_API_KEY}
           JWT_SECRET=$(openssl rand -base64 32)
           SESSION_SECRET=$(openssl rand -base64 32)
           FRONTEND_URL=https://comments.sarcasticrobo.online
           EOF
+
+            # Verify .env was created correctly
+            echo "Verifying .env file (secrets masked)..."
+            if grep -q "GOOGLE_CLIENT_ID=\${GOOGLE_CLIENT_ID}" .env; then
+              echo "ERROR: Environment variables not interpolated!"
+              exit 1
+            fi
+            echo ".env file created successfully"
 
             # Setup PostgreSQL database
             echo "Setting up database..."
