@@ -25,6 +25,32 @@ class User {
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     return result.rows[0];
   }
+
+  static async getProfile(id) {
+    const result = await pool.query(
+      `SELECT id, google_id, email, display_name, avatar_url, 
+              avg_rating, total_ratings, created_at 
+       FROM users 
+       WHERE id = $1`,
+      [id]
+    );
+    return result.rows[0];
+  }
+
+  static async getProfileWithStats(id) {
+    const result = await pool.query(
+      `SELECT u.id, u.google_id, u.email, u.display_name, u.avatar_url,
+              u.avg_rating, u.total_ratings, u.created_at,
+              COUNT(DISTINCT c.id) as total_comments,
+              COUNT(DISTINCT CASE WHEN c.status = 'approved' THEN c.id END) as approved_comments
+       FROM users u
+       LEFT JOIN comments c ON u.id = c.user_id
+       WHERE u.id = $1
+       GROUP BY u.id`,
+      [id]
+    );
+    return result.rows[0];
+  }
 }
 
 module.exports = User;
