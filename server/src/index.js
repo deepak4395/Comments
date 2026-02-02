@@ -133,7 +133,7 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const HOST = '0.0.0.0'; // Bind to all interfaces for VPS compatibility
+const BIND_HOST = '0.0.0.0'; // Bind to all interfaces for VPS compatibility
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
@@ -151,8 +151,8 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`Server running on ${HOST}:${PORT}`);
+const server = app.listen(PORT, BIND_HOST, () => {
+  console.log(`Server running on ${BIND_HOST}:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'Not configured'}`);
   console.log('Server is ready to accept connections');
