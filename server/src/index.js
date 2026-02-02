@@ -24,6 +24,7 @@ if (missingEnvVars.length > 0) {
 const passport = require('./config/passport');
 const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
+const userRoutes = require('./routes/users');
 
 const app = express();
 
@@ -93,6 +94,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/auth', authRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/users', userRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -114,6 +116,14 @@ app.get('/', (req, res) => {
         myComments: '/api/comments/my-comments',
         updateRating: '/api/comments/:id/rating',
         delete: '/api/comments/:id',
+      },
+      users: {
+        profile: '/api/users/:id/profile',
+        rateUser: '/api/users/:id/ratings',
+        getUserRatings: '/api/users/:id/ratings',
+        getMyRating: '/api/users/:id/my-rating',
+        deleteRating: '/api/users/:id/ratings',
+        getUserComments: '/api/users/:id/comments',
       },
     },
   });

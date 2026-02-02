@@ -38,4 +38,16 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports = { authMiddleware, JWT_SECRET };
+// Middleware to validate user ID parameter
+const validateUserIdParam = (req, res, next) => {
+  const userId = parseInt(req.params.id);
+  
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: 'Invalid user ID' });
+  }
+  
+  req.validatedUserId = userId;
+  next();
+};
+
+module.exports = { authMiddleware, validateUserIdParam, JWT_SECRET };

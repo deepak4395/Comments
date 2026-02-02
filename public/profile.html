@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Comments System</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Additional styles specific to profile page */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(30, 144, 255, 0.1));
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid var(--primary-color);
+            object-fit: cover;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 2rem;
+            margin: 0 0 0.5rem 0;
+            color: var(--text-primary);
+        }
+
+        .profile-email {
+            color: var(--text-secondary);
+            margin: 0 0 1rem 0;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .rating-section {
+            margin: 2rem 0;
+        }
+
+        .rating-display {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .star {
+            font-size: 1.5rem;
+            color: #ddd;
+        }
+
+        .star.filled {
+            color: #ffc107;
+        }
+
+        .star.clickable {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .star.clickable:hover {
+            transform: scale(1.2);
+        }
+
+        .rating-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .rating-count {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .rating-form {
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .rating-breakdown {
+            margin-top: 1rem;
+        }
+
+        .rating-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .rating-bar-label {
+            width: 60px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .rating-bar-fill-container {
+            flex: 1;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .rating-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s ease;
+        }
+
+        .rating-bar-count {
+            width: 40px;
+            text-align: right;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .comment-item-profile {
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .comment-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .comment-section {
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .comment-date {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .comment-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .comment-status.approved {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+
+        .comment-status.pending {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+        }
+
+        .comment-status.rejected {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: transform 0.2s;
+        }
+
+        .back-link:hover {
+            transform: translateX(-5px);
+        }
+
+        .rating-item {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .rating-item-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .rating-item-info {
+            flex: 1;
+        }
+
+        .rating-item-name {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .rating-item-date {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .error-message {
+            padding: 1rem;
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            border-radius: 8px;
+            color: #f44336;
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💬 Comments & Feedback</h1>
+            <div id="auth-section">
+                <div id="user-info" class="hidden">
+                    <img id="user-avatar" src="" alt="Avatar" class="avatar">
+                    <span id="user-name"></span>
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+                <button id="login-btn" class="btn btn-primary hidden">Login with Google</button>
+            </div>
+        </header>
+
+        <main>
+            <a href="index.html" class="back-link">← Back to Comments</a>
+
+            <div id="error-container"></div>
+            <div id="loading" class="loading">Loading profile...</div>
+            
+            <div id="profile-content" class="hidden">
+                <!-- Profile Header -->
+                <div class="profile-header">
+                    <img id="profile-avatar" src="" alt="Profile Avatar" class="profile-avatar">
+                    <div class="profile-info">
+                        <h2 class="profile-name" id="profile-name"></h2>
+                        <p class="profile-email" id="profile-email"></p>
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-comments">0</div>
+                                <div class="stat-label">Total Comments</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-approved">0</div>
+                                <div class="stat-label">Approved</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-rating">-</div>
+                                <div class="stat-label">Average Rating</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" data-tab="rating">User Rating</button>
+                    <button class="tab" data-tab="comments">Comments</button>
+                    <button class="tab" data-tab="ratings-received">Ratings Received</button>
+                </div>
+
+                <!-- Tab: User Rating -->
+                <div id="tab-rating" class="tab-content active">
+                    <section class="card rating-section">
+                        <h3>User Rating</h3>
+                        <div class="rating-display">
+                            <div class="star-rating" id="avg-rating-stars"></div>
+                            <span class="rating-value" id="avg-rating-value">-</span>
+                            <span class="rating-count" id="rating-count">(0 ratings)</span>
+                        </div>
+
+                        <div class="rating-breakdown" id="rating-breakdown"></div>
+
+                        <!-- Rate User Form -->
+                        <div id="rating-form-container" class="hidden">
+                            <div class="rating-form">
+                                <h4>Rate This User</h4>
+                                <p id="current-rating-text"></p>
+                                <div class="rating-display">
+                                    <div class="star-rating" id="rate-user-stars"></div>
+                                </div>
+                                <button id="submit-rating-btn" class="btn btn-primary" disabled>Submit Rating</button>
+                                <button id="delete-rating-btn" class="btn btn-secondary hidden">Delete My Rating</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab: Comments -->
+                <div id="tab-comments" class="tab-content">
+                    <section class="card">
+                        <h3>User's Comments</h3>
+                        <div id="user-comments-list"></div>
+                    </section>
+                </div>
+
+                <!-- Tab: Ratings Received -->
+                <div id="tab-ratings-received" class="tab-content">
+                    <section class="card">
+                        <h3>Ratings Received</h3>
+                        <div id="ratings-received-list"></div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Comments System. Built with ❤️ using Node.js, PostgreSQL, and Google Gemini AI</p>
+        </footer>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/profile.js"></script>
+</body>
+</html>

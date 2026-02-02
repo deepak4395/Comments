@@ -208,7 +208,9 @@ const Comments = {
                 <div class="comment-header">
                     <div class="comment-author">
                         <img src="${comment.avatar_url || 'https://via.placeholder.com/32'}" alt="${comment.display_name}">
-                        <span class="comment-author-name">${comment.display_name}</span>
+                        <a href="profile.html?id=${comment.user_id}" class="comment-author-name" style="text-decoration: none; color: inherit;">
+                            ${comment.display_name}
+                        </a>
                     </div>
                     <div class="comment-date">${date}</div>
                 </div>
